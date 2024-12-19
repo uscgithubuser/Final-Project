@@ -1,0 +1,12 @@
+{
+  "realm": "SysInteAndArchi",
+  "auth-server-url": "http://localhost:8080/",
+  "ssl-required": "external",
+  "resource": "test_client",
+  "verify-token-audience": true,
+  "credentials": {
+    "secret": "XcCMXTe6mkUpNJgAOeAF2FSUp2ajkdzM"
+  },
+  "use-resource-role-mappings": true,
+  "confidential-port": 0
+}

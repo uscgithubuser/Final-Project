@@ -1,27 +1,38 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
-
+const passport = require('../../middleware/passportConfig');
+const {getKeycloakLogoutURL} = require('../../middleware/passportConfig');
 const router = express.Router();
 
-let users = []; // In-memory storage for users
+// Redirect to Keycloak for login
+router.get(
+  '/login',
+  passport.authenticate('keycloak', { scope: ['openid'] }) // OpenID Connect scope
+);
 
-// Register a new user
-router.post('/register', (req, res) => {
-  const { username, password } = req.body;
-  const newUser  = { username, password };
-  users.push(newUser );
-  res.status(201).json({ message: 'User  registered successfully' });
-});
-
-// Login user
-router.post('/login', (req, res) => {
-  const { username, password } = req.body;
-  const user = users.find(u => u.username === username && u.password === password);
-  if (!user) {
-    return res.status(401).json({ error: 'Invalid credentials' });
+// Keycloak callback route
+router.get(
+  '/callback',
+  passport.authenticate('keycloak', { failureRedirect: '/login' }),
+  (req, res) => {
+    // Successful authentication
+    res.json({
+      message: 'Successfully authenticated with Keycloak',
+      user: req.user,
+    });
   }
-  const token = jwt.sign({ username }, 'your_jwt_secret', { expiresIn: '1h' });
-  res.json({ token });
+);
+
+router.get('/logout', (req, res) => {
+  const logoutURL = getKeycloakLogoutURL();
+
+  // Destroy session and redirect to Keycloak logout
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Session destruction error:', err);
+      return res.status(500).json({ error: 'Logout failed' });
+    }
+    res.redirect(logoutURL);
+  });
 });
 
 module.exports = router;
