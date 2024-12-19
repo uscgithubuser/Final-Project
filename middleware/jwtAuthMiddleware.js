@@ -1,23 +1,24 @@
 const jwt = require('jsonwebtoken');
-const passport = require('passport');
-require('dotenv').config();
 
-module.exports = function authMiddleware(req, res, next) {
-  // Get the token from the Authorization header
-  const token = req.header('Authorization')?.replace('Bearer ', '');
+const verifyToken = (req, res, next) => {
+  const authHeader = req.headers.authorization;
 
-  // If no token is provided, return an unauthorized error
-  if (!token) {
-    return res.status(401).json({ error: 'No token provided, authorization denied' });
+  if (!authHeader) {
+    return res.status(401).json({ error: 'Unauthorized: No token provided' });
   }
+
+  const token = authHeader.split(' ')[1]; // Extract Bearer token
 
   try {
-    // Verify the token
-    const decoded = jwt.verify(token, 'your_jwt_secret'); // Use the same secret as in your login route
-    req.user = decoded; // Attach the user information to the request object
-    next(); // Call the next middleware or route handler
+    const decoded = jwt.decode(token, { complete: true });
+    if (!decoded) throw new Error('Invalid token');
+
+    // Extract roles or any needed data
+    req.user = decoded.payload;
+    next();
   } catch (err) {
-    // If token verification fails, return an unauthorized error
-    return res.status(401).json({ error: 'Token is not valid' });
+    return res.status(401).json({ error: 'Unauthorized: Invalid token' });
   }
 };
+
+module.exports = verifyToken;

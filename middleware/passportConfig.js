@@ -3,6 +3,18 @@ const OAuth2Strategy = require('passport-oauth2');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
+// Helper to generate Keycloak logout URL
+function getKeycloakLogoutURL() {
+  // Base Keycloak logout URL
+  const keycloakBaseURL = process.env.KEYCLOAK_AUTH_URL.replace('/auth', '');
+  const logoutURL = `${keycloakBaseURL}/protocol/openid-connect/logout`;
+
+  // Redirect back to the login page
+  const redirectURI = process.env.KEYCLOAK_LOGOUT_REDIRECT || 'http://localhost:4000/api/auth/login';
+
+  return `${logoutURL}?redirect_uri=${encodeURIComponent(redirectURI)}`;
+}
+
 passport.use(
   'keycloak',
   new OAuth2Strategy(
@@ -20,7 +32,7 @@ passport.use(
         const decodedToken = jwt.verify(accessToken, publicKey, { algorithms: ['RS256'] });
 
         console.log('Decoded Token:', decodedToken);
-        
+
         const roles = decodedToken?.realm_access?.roles || [];
         console.log('User Roles:', roles);
 
@@ -42,4 +54,6 @@ passport.deserializeUser((user, done) => {
   done(null, user);
 });
 
+// Export passport and the helper function separately
 module.exports = passport;
+module.exports.getKeycloakLogoutURL = getKeycloakLogoutURL;

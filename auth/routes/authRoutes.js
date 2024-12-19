@@ -1,6 +1,6 @@
 const express = require('express');
 const passport = require('../../middleware/passportConfig');
-
+const {getKeycloakLogoutURL} = require('../../middleware/passportConfig');
 const router = express.Router();
 
 // Redirect to Keycloak for login
@@ -22,23 +22,16 @@ router.get(
   }
 );
 
-// Logout route
 router.get('/logout', (req, res) => {
-  req.logout((err) => {
+  const logoutURL = getKeycloakLogoutURL();
+
+  // Destroy session and redirect to Keycloak logout
+  req.session.destroy((err) => {
     if (err) {
+      console.error('Session destruction error:', err);
       return res.status(500).json({ error: 'Logout failed' });
     }
-
-    // Keycloak logout URL with redirect URI
-    const keycloakLogoutURL = `http://localhost:8080/realms/final-project/protocol/openid-connect/logout?redirect_uri=http://localhost:4000/`;
-
-    // Destroy the session and redirect to Keycloak logout
-    req.session.destroy((sessionErr) => {
-      if (sessionErr) {
-        console.error('Session destruction error:', sessionErr);
-      }
-      res.redirect(keycloakLogoutURL);
-    });
+    res.redirect(logoutURL);
   });
 });
 
